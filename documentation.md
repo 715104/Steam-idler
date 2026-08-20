@@ -128,11 +128,20 @@ sequenceDiagram
 ### 4.2 Security & Session Management
 
 The system strictly adheres to minimizing data footprint. 
+- **PIN/Passcode Access Control**: Optional zero-cost authentication layer via `APP_PIN` environment variable. When enabled, a modern lock screen prompts for the PIN, and all API endpoints enforce `x-app-pin` validation.
+- **Keep-Alive Exemption**: Health check `/api/health` remains exempt from authentication to allow external ping services (e.g., UptimeRobot) to keep free-tier cloud instances awake 24/7 without exposing bot controls.
 - Refresh tokens are only persisted locally on disk if specifically requested.
 - Sessions are maintained entirely in memory.
 - All WebAPI interactions utilize temporary session cookies injected per-request, dropping them upon service termination.
 
-## 5. Deployment Constraints
+## 5. Deployment & Environment Variables
+
+| Variable | Required | Description |
+| :--- | :--- | :--- |
+| `NODE_ENV` | Optional | Set to `production` when deployed. |
+| `PORT` | Optional | Dynamic port assigned by cloud host (Render, Railway, etc.). Defaults to `3000`. |
+| `APP_PIN` | Optional | Set custom PIN/passcode. Defaults to `231530` if not set. |
+
 *   **Dependencies**: Requires Node.js >= 18.
 *   **Network**: Outbound TCP access to Steam's CM servers on standard ports (27015-27030, 443).
 *   **Scaling**: Stateful architecture. The `BotManager` runs in a single Node process. Load balancing requires sticky sessions or a redis-backed session layer if distributed.

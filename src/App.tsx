@@ -8,6 +8,7 @@ import { SteamGuardModal } from './components/SteamGuardModal';
 import { BotConfig, BotState } from './types';
 import { apiFetch } from './lib/api';
 import { ConfirmModal } from './components/ConfirmModal';
+import { PinLockModal } from './components/PinLockModal';
 import { motion, AnimatePresence } from 'motion/react';
 import { Loader2 } from 'lucide-react';
 export default function App() {
@@ -15,6 +16,7 @@ export default function App() {
   const [isLoading, setIsLoading] = useState(false);
   const [loadingText, setLoadingText] = useState<string | null>(null);
   const [isDisconnectModalOpen, setIsDisconnectModalOpen] = useState(false);
+  const [isLocked, setIsLocked] = useState(false);
   const [config, setConfig] = useState<BotConfig>({
     accountName: '',
     personaState: 1,
@@ -77,6 +79,34 @@ export default function App() {
       console.error('Failed to poll status', err);
     }
   };
+  useEffect(() => {
+    const checkAuth = async () => {
+      try {
+        const res = await apiFetch('/api/auth/config');
+        if (res.ok) {
+          const data = await res.json();
+          if (data.requiresAuth) {
+            const savedPin = localStorage.getItem('steam_booster_pin');
+            if (!savedPin) {
+              setIsLocked(true);
+            } else {
+              const verifyRes = await apiFetch('/api/auth/verify', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ pin: savedPin }),
+              });
+              if (!verifyRes.ok) {
+                setIsLocked(true);
+              }
+            }
+          }
+        }
+      } catch (err) {
+        console.error('Failed to check auth configuration', err);
+      }
+    };
+    checkAuth();
+  }, []);
   useEffect(() => {
     fetchStatus();
     const interval = setInterval(fetchStatus, 1500);
@@ -392,6 +422,14 @@ export default function App() {
           </span>
         </div>
       </footer>
+      {isLocked && (
+        <PinLockModal
+          onUnlocked={() => {
+            setIsLocked(false);
+            fetchStatus();
+          }}
+        />
+      )}
     </div>
   );
 }

@@ -15,6 +15,35 @@ export function setupRoutes(app: Express) {
   app.get('/api/health', (req, res) => {
     res.json({ status: 'ok', timestamp: Date.now() });
   });
+  app.get('/api/auth/config', (req, res) => {
+    const requiredPin = process.env.APP_PIN || process.env.AUTH_PASSWORD || '231530';
+    res.json({ requiresAuth: Boolean(requiredPin) });
+  });
+  app.post('/api/auth/verify', (req, res) => {
+    const requiredPin = process.env.APP_PIN || process.env.AUTH_PASSWORD || '231530';
+    if (!requiredPin) {
+      return res.json({ success: true });
+    }
+    const { pin } = req.body;
+    if (pin && String(pin).trim() === String(requiredPin).trim()) {
+      return res.json({ success: true });
+    }
+    return res.status(401).json({ success: false, error: 'Invalid security PIN' });
+  });
+  app.use((req, res, next) => {
+    const requiredPin = process.env.APP_PIN || process.env.AUTH_PASSWORD || '231530';
+    if (!requiredPin) {
+      return next();
+    }
+    if (req.path === '/api/health' || req.path.startsWith('/api/auth/')) {
+      return next();
+    }
+    const clientPin = req.headers['x-app-pin'] || req.query.pin;
+    if (clientPin && String(clientPin).trim() === String(requiredPin).trim()) {
+      return next();
+    }
+    return res.status(401).json({ error: 'Unauthorized: Security PIN required' });
+  });
   app.get('/api/status', (req, res) => {
     const bot = getBotForRequest(req);
     res.json(bot.getState);

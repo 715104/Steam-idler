@@ -30,12 +30,12 @@ export function setupRoutes(app: Express) {
     }
     return res.status(401).json({ success: false, error: 'Invalid security PIN' });
   });
-  app.use((req, res, next) => {
-    const requiredPin = process.env.APP_PIN || process.env.AUTH_PASSWORD || '231530';
-    if (!requiredPin) {
+  app.use('/api', (req, res, next) => {
+    if (req.path === '/health' || req.path.startsWith('/auth/')) {
       return next();
     }
-    if (req.path === '/api/health' || req.path.startsWith('/api/auth/')) {
+    const requiredPin = process.env.APP_PIN || process.env.AUTH_PASSWORD || '231530';
+    if (!requiredPin) {
       return next();
     }
     const clientPin = req.headers['x-app-pin'] || req.query.pin;

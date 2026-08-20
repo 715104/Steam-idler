@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { Shield, Trash2, Loader2, RefreshCw, Laptop, Smartphone, Globe, Calendar, MapPin, AlertCircle, HelpCircle } from 'lucide-react';
 import { motion } from 'motion/react';
 import { ConfirmModal } from './ConfirmModal';
+import { apiFetch } from '../lib/api';
 interface Device {
   tokenId: string;
   description: string;
@@ -27,7 +28,7 @@ export const DevicesView: React.FC = () => {
     setIsLoading(true);
     setError(null);
     try {
-      const res = await fetch('/api/steam/active-devices');
+      const res = await apiFetch('/api/steam/active-devices');
       const data = await res.json();
       if (!res.ok) {
         throw new Error(data.error || 'Failed to fetch active devices.');
@@ -50,7 +51,7 @@ export const DevicesView: React.FC = () => {
     if (!selectedDevice) return;
     setIsRevoking(true);
     try {
-      const res = await fetch('/api/steam/revoke-device', {
+      const res = await apiFetch('/api/steam/revoke-device', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ tokenId: selectedDevice.tokenId }),
